@@ -170,7 +170,7 @@ String.prototype.removeOverWhitespace = function () {
 		const url = document.querySelector('#url').value;	
 
 		// clear table	
-		// clearTable(document.querySelector('#chapters'));	
+		clearTable(document.querySelector('#chapters'));	
 			getPageContent(url)	
 			.then((page) => {	
 				listAllItems(page.links);	
