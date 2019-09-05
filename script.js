@@ -66,38 +66,6 @@ function _arrayWithoutHoles(arr) {
   }
 }
 
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-  try {
-    var info = gen[key](arg);
-    var value = info.value;
-  } catch (error) {
-    reject(error);
-    return;
-  }
-  if (info.done) {
-    resolve(value);
-  } else {
-    Promise.resolve(value).then(_next, _throw);
-  }
-}
-
-function _asyncToGenerator(fn) {
-  return function() {
-    var self = this,
-      args = arguments;
-    return new Promise(function(resolve, reject) {
-      var gen = fn.apply(self, args);
-      function _next(value) {
-        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-      }
-      function _throw(err) {
-        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-      }
-      _next(undefined);
-    });
-  };
-}
-
 var elements = {
   table: document.querySelector("#chapters"),
   btnFetchPage: document.querySelector("#btnFetchPage")
@@ -150,98 +118,58 @@ var toggleDisable = function toggleDisable(element) {
     : element.setAttribute("disabled", true);
 };
 
-var download =
-  /*#__PURE__*/
-  (function() {
-    var _ref = _asyncToGenerator(
-      /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee(id, title, format) {
-        var doc, content, divElement, _doc, text, paragraph, packer;
-
-        return regeneratorRuntime.wrap(function _callee$(_context) {
-          while (1) {
-            switch ((_context.prev = _context.next)) {
-              case 0:
-                if (!(format == "pdfFormat")) {
-                  _context.next = 15;
-                  break;
-                }
-
-                doc = new jsPDF("p", "pt", "letter");
-                _context.t0 = doc;
-                _context.next = 5;
-                return new Response(storyContents[id]).text();
-
-              case 5:
-                _context.t1 = _context.sent;
-                content = _context.t0.splitTextToSize.call(
-                  _context.t0,
-                  _context.t1,
-                  180
-                );
-                divElement = document.createElement("div");
-                divElement.appendChild(document.createTextNode(content));
-                document.body.appendChild(divElement);
-                specialElementHandlers = {
-                  // element with id of "bypass" - jQuery style selector
-                  "#bypassme": function bypassme(element, renderer) {
-                    // true = "handled elsewhere, bypass text extraction"
-                    return true;
-                  }
-                };
-                margins = {
-                  top: 30,
-                  bottom: 60,
-                  left: 40,
-                  width: 522
-                };
-                doc.fromHTML(
-                  divElement, // HTML string or DOM elem ref.
-                  margins.left, // x coord
-                  margins.top, // y coord
-                  {
-                    width: margins.width, // max width of content on PDF
-                    elementHandlers: specialElementHandlers
-                  },
-                  function(dispose) {
-                    // dispose: object with X, Y of the last line add to the PDF
-                    // this allow the insertion of new lines after html
-                    doc.save("".concat(title, ".pdf"));
-                  },
-                  margins
-                );
-                _context.next = 23;
-                break;
-
-              case 15:
-                _doc = new Document();
-                _context.next = 18;
-                return new Response(storyContents[id]).text();
-
-              case 18:
-                text = _context.sent;
-                paragraph = new Paragraph(text);
-
-                _doc.addParagraph(paragraph);
-
-                packer = new Packer();
-                packer.toBlob(_doc).then(function(blob) {
-                  return saveAs(blob, "".concat(title, ".docx"));
-                });
-
-              case 23:
-              case "end":
-                return _context.stop();
-            }
-          }
-        }, _callee);
-      })
+var download = async function download(id, title, format) {
+  if (format == "pdfFormat") {
+    var doc = new jsPDF("p", "pt", "letter");
+    var content = doc.splitTextToSize(
+      await new Response(storyContents[id]).text(),
+      180
     );
-
-    return function download(_x, _x2, _x3) {
-      return _ref.apply(this, arguments);
+    var divElement = document.createElement("div");
+    divElement.appendChild(document.createTextNode(content));
+    document.body.appendChild(divElement);
+    specialElementHandlers = {
+      // element with id of "bypass" - jQuery style selector
+      "#bypassme": function bypassme(element, renderer) {
+        // true = "handled elsewhere, bypass text extraction"
+        return true;
+      }
     };
-  })();
+    margins = {
+      top: 30,
+      bottom: 60,
+      left: 40,
+      width: 522
+    };
+    doc.fromHTML(
+      divElement, // HTML string or DOM elem ref.
+      margins.left, // x coord
+      margins.top, // y coord
+      {
+        width: margins.width, // max width of content on PDF
+        elementHandlers: specialElementHandlers
+      },
+      function(dispose) {
+        // dispose: object with X, Y of the last line add to the PDF
+        // this allow the insertion of new lines after html
+        doc.save("".concat(title, ".pdf"));
+      },
+      margins
+    );
+  } else {
+    var _doc = new Document();
+
+    var text = await new Response(storyContents[id]).text();
+    var paragraph = new Paragraph(text);
+
+    _doc.addParagraph(paragraph);
+
+    var packer = new Packer();
+    packer.toBlob(_doc).then(function(blob) {
+      return saveAs(blob, "".concat(title, ".docx"));
+    });
+  }
+};
 
 var createButtonDownload = function createButtonDownload(id, title) {
   var button = document.createElement("button");
@@ -278,58 +206,23 @@ String.prototype.removeOverWhitespace = function() {
   return this.trim().replace(/\s+/g, " ");
 }; // Add Re-try if execution is fail.
 
-var getPageContent =
-  /*#__PURE__*/
-  (function() {
-    var _ref2 = _asyncToGenerator(
-      /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee2(link) {
-        var response, content, parser, pageContent, isTableOfContents;
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) {
-            switch ((_context2.prev = _context2.next)) {
-              case 0:
-                _context2.next = 2;
-                return fetch(link);
-
-              case 2:
-                response = _context2.sent;
-                _context2.next = 5;
-                return response.text();
-
-              case 5:
-                content = _context2.sent;
-                parser = new DOMParser();
-                pageContent = parser.parseFromString(content, "text/html");
-                isTableOfContents =
-                  pageContent.querySelector(".story-controls") === null
-                    ? false
-                    : true;
-                return _context2.abrupt("return", {
-                  content: pageContent
-                    .querySelector("pre")
-                    .textContent.removeOverWhitespace(),
-                  table_of_contents: isTableOfContents,
-                  links: isTableOfContents
-                    ? pageContent.querySelectorAll(
-                        ".table-of-contents > li > a"
-                      )
-                    : [link]
-                });
-
-              case 10:
-              case "end":
-                return _context2.stop();
-            }
-          }
-        }, _callee2);
-      })
-    );
-
-    return function getPageContent(_x4) {
-      return _ref2.apply(this, arguments);
-    };
-  })();
+var getPageContent = async function getPageContent(link) {
+  var response = await fetch(link);
+  var content = await response.text();
+  var parser = new DOMParser();
+  var pageContent = parser.parseFromString(content, "text/html");
+  var isTableOfContents =
+    pageContent.querySelector(".story-controls") === null ? false : true;
+  return {
+    content: pageContent
+      .querySelector("pre")
+      .textContent.removeOverWhitespace(),
+    table_of_contents: isTableOfContents,
+    links: isTableOfContents
+      ? pageContent.querySelectorAll(".table-of-contents > li > a")
+      : [link]
+  };
+};
 
 var getEachPageInTableOfContents = function getEachPageInTableOfContents(page) {
   var urls = _toConsumableArray(page.links);
