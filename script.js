@@ -1,6 +1,3 @@
-
-<script>
-
 const elements = {
 	table  : document.querySelector('#chapters'),
 	btnFetchPage : document.querySelector('#btnFetchPage'),
@@ -170,7 +167,3 @@ String.prototype.removeOverWhitespace = function () {
 				getEachPageInTableOfContents(page)
 			}).catch((err) => console.log(err));
 	});
-
-
-
-</script>
