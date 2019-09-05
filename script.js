@@ -26,7 +26,7 @@ const listAllItems = (items) => {
 
 				newRow.insertCell(titleCellIndex).appendChild(document.createTextNode(title.removeOverWhitespace()));
 				newRow.insertCell(statusCellIndex).appendChild(document.createTextNode('Downloading..'));
-				newRow.insertCell(actionCellIndex).appendChild(createButtonDownload(id, `${index + 1}-${title.removeOverWhitespace()}`));
+				newRow.insertCell(actionCellIndex).appendChild(createButtonDownload(id, `${title.removeOverWhitespace()}`));
 				newRow.setAttribute('id', id);
 		});
 };
@@ -89,17 +89,25 @@ const createButtonDownload = (id, title) => {
 		button.addEventListener('click', () => {
 			format = document.querySelector('input[type=radio]:checked');
 			download(id, title, format.getAttribute('id'));
-			// download(id, title);
 		});
 		return button;
 };
 
-const createButtonRetryDownload = (id) => {
+const createButtonRetryDownload = (id,route) => {
 		let button = document.createElement('button');
-		button.appendChild(document.createTextNode('Retry Download'));
+		button.appendChild(document.createTextNode('Download Again'));
 		button.setAttribute('id', id);
 		button.addEventListener('click', () => {
-			console.log('Retry Download');
+			let docFragment = document.createDocumentFragment();
+			let node = document.createElement('a');
+			
+			node.innerHTML = document.querySelector(`#${id}`).children[titleCellIndex].textContent
+			node.setAttribute('href', route);
+			docFragment.appendChild(node);
+			getEachPageInTableOfContents({
+				table_of_contents: false,
+				links : docFragment.querySelectorAll('*')
+			}); 
 		});
 		return button;
 };
@@ -126,6 +134,7 @@ String.prototype.removeOverWhitespace = function () {
 	const getEachPageInTableOfContents = (page) => {
 		let urls = [...page.links];
 		let successDownload = 0;
+		document.querySelector('#message').innerHTML = '';
 
 		for(let [index, url] of urls.entries()) {
 			let route = page.table_of_contents ? `https://www.wattpad.com${url.getAttribute('href')}` : url;
@@ -134,16 +143,17 @@ String.prototype.removeOverWhitespace = function () {
 			let actionElement = document.querySelector(`#${rowId}`).children[actionCellIndex];
 			getPageContent(route).then((story) => {
 				successDownload++;
-				document.querySelector('#message').innerHTML = `Downloaded ${successDownload} / ${page.links.length} items`;
 				statusElement.innerHTML = 'Ready';
 				statusElement.style.color = 'green';
+				actionElement.innerHTML = '';
+				actionElement.appendChild(createButtonDownload(rowId , `${urls[index].textContent.removeOverWhitespace()}`));
 				storyContents[rowId] = new Blob([story.content],{type: "text/plain"});
-			}).then(_ =>  successDownload === urls.length ? toggleDisable(elements.btnFetchPage) : null )
+			}).then(_ => successDownload === urls.length ? toggleDisable(elements.btnFetchPage) : null )
 			.catch((err) => {
 				statusElement.innerHTML = 'Failed';
 				statusElement.style.color = 'red';
 				actionElement.innerHTML = '';
-				actionElement.innerHTML = createButtonRetryDownload();
+				actionElement.appendChild(createButtonRetryDownload(rowId ,'https://www.wattpad.com/470990105-dreadful-vengeance-chapter-2'));
 			});
 		}
 	};
@@ -159,10 +169,9 @@ String.prototype.removeOverWhitespace = function () {
 		const url = document.querySelector('#url').value;
 
 		// clear table
-		clearTable(document.querySelector('#chapters'));
+		// clearTable(document.querySelector('#chapters'));
 			getPageContent(url)
 			.then((page) => {
-				document.querySelector('#message').innerHTML = `Downloading 0 / ${page.links.length} items`;
 				listAllItems(page.links);
 				getEachPageInTableOfContents(page)
 			}).catch((err) => console.log(err));
